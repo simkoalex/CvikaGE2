@@ -20,7 +20,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn="True"))
 	int Threshold;
-
+	
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent *StaticMeshComponent;
 

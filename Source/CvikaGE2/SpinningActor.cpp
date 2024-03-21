@@ -10,7 +10,6 @@ ASpinningActor::ASpinningActor() :
 
 	UStaticMesh *Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere"));
 	StaticMeshComponent->SetStaticMesh(Sphere);
-
 	
 	SubStaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("SubStaticMeshComponent");
 	SubStaticMeshComponent->SetupAttachment(StaticMeshComponent);
@@ -38,7 +37,7 @@ void ASpinningActor::Tick(float DeltaSeconds)
 	double const CurrentYaw = GetActorRotation().Yaw;
 	if (CurrentYaw < LastYaw)
 	{
-		++NumberOfSpins;
+		NumberOfSpins += 1;
 		OnSpin();
 		if (NumberOfSpins == Threshold)
 		{
