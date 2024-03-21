@@ -37,7 +37,7 @@ void ASpinningActor::Tick(float DeltaSeconds)
 	double const CurrentYaw = GetActorRotation().Yaw;
 	if (CurrentYaw < LastYaw)
 	{
-		NumberOfSpins += 1;
+		++NumberOfSpins;
 		OnSpin();
 		if (NumberOfSpins == Threshold)
 		{
