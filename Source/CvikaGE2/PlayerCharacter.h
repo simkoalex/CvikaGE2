@@ -6,6 +6,18 @@
 #include "GameFramework/Character.h"
 #include "PlayerCharacter.generated.h"
 
+enum EAnimation
+{
+	No = -1,
+	Idle = 0,
+	Run = 1,
+	Backward = 2,
+	Right = 3,
+	Left = 4,
+	Attack = 5,
+	Swim = 6
+};
+
 UCLASS()
 class CVIKAGE2_API APlayerCharacter : public ACharacter
 {
@@ -21,6 +33,8 @@ public:
 	bool bIsAttacking = false;
 
 protected:
+	EAnimation CurrentAnimation = EAnimation::No;
+	
 	float ForwardMovement = 0;
 	float RightMovement = 0;
 
@@ -34,7 +48,19 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	class UAnimSequence* AttackAnimation;
-
+	UPROPERTY(EditAnywhere)
+	class UAnimSequence* RunAnimation;
+	UPROPERTY(EditAnywhere)
+	class UAnimSequence* SwimAnimation;
+	UPROPERTY(EditAnywhere)
+	class UAnimSequence* RightAnimation;
+	UPROPERTY(EditAnywhere)
+	class UAnimSequence* LeftAnimation;
+	UPROPERTY(EditAnywhere)
+	class UAnimSequence* BackAnimation;
+	UPROPERTY(EditAnywhere)
+	class UAnimSequence* IdleAnimation;
+	
 	void MoveForward(float InputValue);
 
 	void MoveRight(float InputValue);
@@ -55,4 +81,5 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	void LineTrace() const;
 };
