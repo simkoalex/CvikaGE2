@@ -37,6 +37,10 @@ protected:
 	
 	float ForwardMovement = 0;
 	float RightMovement = 0;
+	int InteractionDistance = 1000;
+	int ImpulseMultiplier = 1000;
+	int RadialRadius = 200;
+	int RadialMultiplier = 1000;
 
 	const UCharacterMovementComponent* MovementComponent;
 
@@ -70,6 +74,14 @@ protected:
 	void LookUp(float InputValue);
 
 	void StartAttack();
+
+	FHitResult Interact();
+	
+	void Impulse();
+	
+	void Radial();
+	
+	void Force();
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

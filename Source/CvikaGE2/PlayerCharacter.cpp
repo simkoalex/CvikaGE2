@@ -3,6 +3,7 @@
 
 #include "PlayerCharacter.h"
 
+#include "FlyingCube.h"
 #include "HealthComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -25,13 +26,24 @@ void APlayerCharacter::MoveForward(float InputValue)
 {
 	if (bIsAttacking) return;
 	ForwardMovement = InputValue;
-	const FVector ForwardDirection = GetActorForwardVector();
+
+	FVector ForwardDirection;
+	if (MovementComponent->MovementMode == MOVE_Swimming)
+	{
+		if (InputValue < 0) return;
+		ForwardDirection = Camera->GetForwardVector();
+	}
+	else
+	{
+		ForwardDirection = GetActorForwardVector();
+	}
 	AddMovementInput(ForwardDirection, ForwardMovement);
 }
 
 void APlayerCharacter::MoveRight(float InputValue)
 {
 	if (bIsAttacking) return;
+	if (MovementComponent->MovementMode == MOVE_Swimming) return;
 	RightMovement = InputValue;
 	const FVector RightDirection = GetActorRightVector();
 	AddMovementInput(RightDirection, RightMovement);
@@ -56,6 +68,83 @@ void APlayerCharacter::StartAttack()
 	}
 }
 
+FHitResult APlayerCharacter::Interact()
+{
+	FHitResult Hit;
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + Camera->GetForwardVector() * InteractionDistance;
+	
+	DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1, 0, 1);
+	FCollisionQueryParams TraceParams;
+	TraceParams.AddIgnoredActor(this);
+	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility,
+		TraceParams);
+	return Hit;
+}
+
+void APlayerCharacter::Impulse()
+{
+	FHitResult Hit = Interact();
+	if (Hit.IsValidBlockingHit())
+	{
+		if (Hit.GetActor()->IsRootComponentMovable())
+		{
+			UStaticMeshComponent * MeshComp =
+				Cast<UStaticMeshComponent>(Hit.GetActor()->GetRootComponent());
+
+			if (MeshComp)
+			{
+				MeshComp->AddImpulse(Camera->GetForwardVector() * ImpulseMultiplier);
+			}
+		}
+	}
+}
+
+void APlayerCharacter::Radial()
+{
+	FHitResult Hit = Interact();
+	if (Hit.IsValidBlockingHit())
+	{
+		TArray<FHitResult> Hits;
+		FCollisionShape SphereCol = FCollisionShape::MakeSphere(RadialRadius);
+
+		bool bSweepHit = GetWorld()->SweepMultiByChannel(
+			Hits, Hit.Location, Hit.Location, FQuat::Identity, ECC_Visibility, SphereCol);
+
+		DrawDebugSphere(GetWorld(), Hit.Location, RadialRadius, 64,
+			FColor::Orange, false, 2.0);
+
+		if (!bSweepHit) return;
+
+		for (auto& HitActor : Hits)
+		{
+			if (HitActor.GetActor()->IsRootComponentMovable())
+			{
+				UStaticMeshComponent * MeshComp =
+				Cast<UStaticMeshComponent>(HitActor.GetActor()->GetRootComponent());
+
+				if (MeshComp)
+				{
+					MeshComp->AddRadialImpulse(Hit.Location, RadialRadius, RadialMultiplier, RIF_Constant);
+				}
+			}
+		}
+	}
+}
+
+void APlayerCharacter::Force()
+{
+	FHitResult Hit = Interact();
+	if (Hit.IsValidBlockingHit())
+	{
+		AFlyingCube* FlyingCube = Cast<AFlyingCube>(Hit.GetActor());
+		if (IsValid(FlyingCube))
+		{
+			FlyingCube->Ignite();
+		}
+	}
+}
+
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
@@ -69,6 +158,14 @@ void APlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (bIsAttacking) return;
+
+	if (SwimAnimation && CurrentAnimation != Swim && MovementComponent->MovementMode == MOVE_Swimming)
+	{
+		GetMesh()->PlayAnimation(SwimAnimation, true);
+		CurrentAnimation = Swim;
+	}
+
+	if (MovementComponent->MovementMode == MOVE_Swimming) return;
 
 	if (IdleAnimation && ForwardMovement == 0 && RightMovement == 0 && CurrentAnimation != Idle)
 	{
@@ -114,6 +211,13 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAxis("Turn", this, &APlayerCharacter::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &APlayerCharacter::LookUp);
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &APlayerCharacter::StartAttack);
+
+	PlayerInputComponent->BindAction("Impulse", IE_Pressed, this,
+		&APlayerCharacter::Impulse);
+	PlayerInputComponent->BindAction("Radial", IE_Pressed, this,
+		&APlayerCharacter::Radial);
+	PlayerInputComponent->BindAction("Force", IE_Pressed, this,
+		&APlayerCharacter::Force);
 }
 
 void APlayerCharacter::LineTrace() const
