@@ -65,8 +65,10 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class UAnimSequence* IdleAnimation;
 	
+	UFUNCTION(BlueprintCallable)
 	void MoveForward(float InputValue);
 
+    UFUNCTION(BlueprintCallable)
 	void MoveRight(float InputValue);
 
 	void Turn(float InputValue);
